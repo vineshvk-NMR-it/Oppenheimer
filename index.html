@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Born–Oppenheimer Approximation — Interactive</title>
+<style>
+  :root{
+    --navy:#0a285a; --navy-light:#1a3f78; --gold:#b48c32; --gold-bright:#d4a63a;
+    --light-gold:#fff8dc; --light-navy:#e6ebf5; --ink:#1b2430; --muted:#5a6675;
+    --paper:#fff; --bg:#f4f6fb; --grid:#dce3ef;
+    --bond:#2471a3; --anti:#c0392b; --elec:#6a2c91; --level:#0a285a; --wave:#b48c32;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:'Palatino Linotype','Book Antiqua',Georgia,serif;color:var(--ink);background:var(--bg);line-height:1.6;}
+  header.hero{background:linear-gradient(135deg,var(--navy) 0%,#071d42 100%);color:#fff;padding:42px 24px 36px;text-align:center;border-bottom:4px solid var(--gold);}
+  header.hero .lecture-label{font-size:1.55rem;font-weight:700;color:var(--gold-bright);letter-spacing:.5px;}
+  header.hero h1{margin:2px 0 6px;font-size:2.0rem;}
+  header.hero .rule{width:360px;max-width:72%;height:2px;background:var(--gold);margin:12px auto;border:none;border-radius:2px;}
+  header.hero .course-line{color:#dfe7f5;font-size:1.0rem;font-weight:600;}
+  header.hero .course-line .sep{color:var(--gold-bright);margin:0 8px;}
+  header.hero .instructor{color:#cdd7ea;font-size:.95rem;margin-top:8px;}
+  nav.toc{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--grid);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:9px 12px;}
+  nav.toc a{color:var(--navy);text-decoration:none;font-size:.88rem;font-weight:600;padding:5px 11px;border-radius:20px;}
+  nav.toc a:hover{background:var(--light-navy);}
+  main{max-width:1020px;margin:0 auto;padding:0 20px 80px;}
+  section{margin-top:50px;scroll-margin-top:60px;}
+  h2{color:var(--navy);font-size:1.7rem;margin:0 0 4px;border-bottom:2px solid var(--gold);padding-bottom:8px;}
+  h2 .num{display:inline-block;background:var(--navy);color:#fff;font-size:1rem;width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;margin-right:12px;vertical-align:middle;}
+  h3{color:var(--navy-light);font-size:1.18rem;margin:20px 0 6px;}
+  p{margin:11px 0;} a{color:var(--navy);}
+  .lead{font-size:1.06rem;color:var(--muted);}
+  .panel{background:var(--paper);border:1px solid var(--grid);border-radius:14px;box-shadow:0 4px 18px rgba(10,40,90,.06);padding:20px;margin:18px 0;}
+  .equation{background:var(--navy);color:#fff;border-radius:12px;text-align:center;padding:16px;margin:14px 0;font-size:1.2rem;}
+  .equation .hi{color:var(--gold-bright);}
+  .note{background:var(--light-navy);border-radius:10px;padding:12px 16px;font-size:.96rem;border-left:4px solid var(--navy);}
+  .note.gold{background:var(--light-gold);border-left-color:var(--gold);}
+  .mono{font-family:'SFMono-Regular',Consolas,monospace;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+  canvas{width:100%;display:block;background:#fff;border-radius:10px;border:1px solid var(--grid);}
+  .cap{font-size:.84rem;color:var(--muted);text-align:center;margin-top:6px;}
+  .ctrl{margin:12px 0 4px;}
+  .ctrl label{font-size:.9rem;font-weight:600;color:var(--navy);display:flex;justify-content:space-between;}
+  .ctrl label .val{font-family:monospace;color:var(--gold);font-weight:700;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:4px;background:var(--light-navy);outline:none;margin-top:5px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid #fff;cursor:pointer;}
+  .btnrow{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px;align-items:center;}
+  button{font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 15px;}
+  button:hover{background:var(--navy-light);}
+  button.gold{background:var(--gold);} button.gold:hover{background:var(--gold-bright);}
+  button.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+  button.ghost:hover{background:var(--light-navy);}
+  .seg{display:inline-flex;border:1.5px solid var(--navy);border-radius:8px;overflow:hidden;}
+  .seg button{background:#fff;color:var(--navy);border:none;border-radius:0;padding:7px 13px;font-size:.85rem;}
+  .seg button.active{background:var(--navy);color:#fff;}
+  .seg button+button{border-left:1.5px solid var(--navy);}
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px;}
+  .chip{background:var(--light-gold);border:1px solid var(--gold);border-radius:20px;padding:5px 13px;font-size:.88rem;color:var(--navy);}
+  .chip b{font-family:monospace;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;margin-top:8px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:18px;height:4px;border-radius:2px;display:inline-block;}
+  select{font-family:inherit;font-size:.9rem;padding:7px 10px;border-radius:8px;border:1.5px solid var(--navy);color:var(--navy);background:#fff;font-weight:600;}
+  footer{background:var(--navy);color:#cdd7ea;text-align:center;padding:24px 20px;font-size:.9rem;margin-top:44px;}
+  footer a{color:var(--gold-bright);}
+  table.ham{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem;}
+  table.ham td{border:1px solid var(--grid);padding:7px 11px;}
+  table.ham td:first-child{font-family:monospace;color:var(--navy);font-weight:700;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="lecture-label">The Born–Oppenheimer Approximation</div>
+  <h1>From Clamped Nuclei to Vibrational Levels</h1>
+  <hr class="rule">
+  <div class="course-line">CHY211 — Atomic Structure and Chemical Bonding<span class="sep">|</span>Molecular Quantum Mechanics</div>
+  <div class="instructor">Prof. Vinesh Vijayan</div>
+</header>
+
+<nav class="toc">
+  <a href="#idea">The Big Idea</a>
+  <a href="#electronic">Step 1 · Electronic Problem</a>
+  <a href="#nuclear">Step 2 · Nuclear Problem</a>
+  <a href="#validity">When It Breaks</a>
+</nav>
+
+<main>
+
+<!-- ============ BIG IDEA ============ -->
+<section id="idea">
+  <h2><span class="num">1</span>The Big Idea: Separate the Fast from the Slow</h2>
+  <p class="lead">A molecule is a swarm of light, fast electrons and a few heavy, sluggish nuclei. A proton is about 1836 times heavier than an electron, so from the electrons' point of view the nuclei barely move at all. Born and Oppenheimer turned this mass gap into a recipe: freeze the nuclei, solve for the electrons, then let the nuclei move on the energy landscape the electrons create.</p>
+
+  <p>The full molecular Hamiltonian couples everything together:</p>
+  <div class="equation" style="font-size:1.05rem;">
+    Ĥ = <span class="hi">T̂<sub>n</sub></span> + T̂<sub>e</sub> + V̂<sub>ee</sub> + V̂<sub>en</sub> + V̂<sub>nn</sub>
+  </div>
+  <table class="ham">
+    <tr><td>T̂<sub>n</sub></td><td>nuclear kinetic energy (the slow, heavy part)</td></tr>
+    <tr><td>T̂<sub>e</sub></td><td>electronic kinetic energy (the fast, light part)</td></tr>
+    <tr><td>V̂<sub>ee</sub>, V̂<sub>en</sub>, V̂<sub>nn</sub></td><td>electron–electron, electron–nucleus, nucleus–nucleus Coulomb terms</td></tr>
+  </table>
+
+  <p>The approximation writes the total wavefunction as a product, electrons times nuclei:</p>
+  <div class="equation">
+    &Psi;(r, R) &asymp; <span class="hi">&phi;<sub>elec</sub>(r; R)</span> &times; <span class="hi">&chi;<sub>nuc</sub>(R)</span>
+  </div>
+  <p>The semicolon in <span class="mono">&phi;(r; R)</span> is the whole point: the electronic wavefunction depends on nuclear position <span class="mono">R</span> only as a <em>parameter</em>, not a variable. This splits one hard problem into two easier ones, which you will solve yourself below.</p>
+
+  <div class="grid2">
+    <div class="note gold"><strong>Step 1 — Electronic.</strong> Clamp the nuclei at separation <span class="mono">R</span> (so T̂<sub>n</sub> = 0). Solve
+    <div style="text-align:center;margin:6px 0;">[ T̂<sub>e</sub> + V̂<sub>ee</sub> + V̂<sub>en</sub> + V̂<sub>nn</sub> ] &phi; = <span class="mono">U(R)</span> &phi;</div>
+    Repeat for many <span class="mono">R</span> to trace out the <strong>potential energy curve</strong> <span class="mono">U(R)</span>.</div>
+    <div class="note"><strong>Step 2 — Nuclear.</strong> Feed that curve in as the potential and solve for nuclear motion:
+    <div style="text-align:center;margin:6px 0;">[ T̂<sub>n</sub> + <span class="mono">U(R)</span> ] &chi; = E &chi;</div>
+    The bound solutions are the <strong>vibrational energy levels</strong> and wavefunctions.</div>
+  </div>
+  <p>The worked example throughout is the simplest real molecule, the hydrogen molecular ion <strong>H<sub>2</sub><sup>+</sup></strong> (two protons, one electron). Everything below is computed live, not pre-drawn.</p>
+</section>
+
+<!-- ============ STEP 1 ELECTRONIC ============ -->
+<section id="electronic">
+  <h2><span class="num">2</span>Step 1 · Solve the Electrons at Fixed R</h2>
+  <p class="lead">Hold the two nuclei a distance <span class="mono">R</span> apart. We solve the electronic Schrödinger equation with the LCAO method: build the molecular orbital from two atomic 1s orbitals, <span class="mono">&phi;<sub>&plusmn;</sub> &prop; 1s<sub>A</sub> &plusmn; 1s<sub>B</sub></span>, and compute its energy. Drag <span class="mono">R</span> and watch the electron cloud reshape; each setting gives one point on the potential curve.</p>
+
+  <div class="panel">
+    <div class="grid2">
+      <div>
+        <canvas id="cloud" height="230"></canvas>
+        <div class="cap">Electron probability density |&phi;(r;R)|² in the plane of the molecule. Dots = nuclei.</div>
+      </div>
+      <div>
+        <canvas id="pec1" height="230"></canvas>
+        <div class="cap">Each fixed-R electronic calculation drops one point. Sweep R to build U(R).</div>
+      </div>
+    </div>
+
+    <div class="ctrl">
+      <label>Internuclear distance R <span class="val"><span id="v-Rb">2.49</span> a<sub>0</sub> &nbsp;=&nbsp; <span id="v-Ra">1.32</span> Å</span></label>
+      <input type="range" id="s-R" min="0.8" max="8" step="0.01" value="2.49">
+    </div>
+    <div class="btnrow">
+      <span class="seg" id="orb-seg">
+        <button id="b-bond" class="active">Bonding &sigma;<sub>g</sub> (1s<sub>A</sub>+1s<sub>B</sub>)</button>
+        <button id="b-anti">Antibonding &sigma;<sub>u</sub>* (1s<sub>A</sub>&minus;1s<sub>B</sub>)</button>
+      </span>
+      <button class="gold" id="b-sweep">Sweep R → trace curve</button>
+      <button class="ghost" id="b-cleartrace">Clear trace</button>
+    </div>
+    <div class="chips">
+      <div class="chip">Overlap S(R) = <b id="r-S">0.46</b></div>
+      <div class="chip">Electronic+repulsion U(R) = <b id="r-U">-0.565</b> Ha</div>
+      <div class="chip">Nuclear repulsion 1/R = <b id="r-rep">0.402</b> Ha</div>
+      <div class="chip" id="r-well">Well depth D<sub>e</sub> = <b>1.76</b> eV at R<sub>e</sub> = <b>1.32</b> Å</div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--bond)"></i> bonding U(R)</span>
+      <span><i style="background:var(--anti)"></i> antibonding U*(R)</span>
+      <span><i style="background:var(--gold);border-radius:50%;width:10px;height:10px"></i> current R</span>
+    </div>
+  </div>
+
+  <div class="note">Notice the physics the cloud is showing: in the <strong>bonding</strong> orbital, electron density piles up <em>between</em> the nuclei, gluing them together, so U(R) develops a minimum. In the <strong>antibonding</strong> orbital there is a node between the nuclei, density is pushed to the outside, and U*(R) just falls as R grows: no bond. The attractive well of the bonding curve is exactly the potential the nuclei will live in next.</p></div>
+</section>
+
+<!-- ============ STEP 2 NUCLEAR ============ -->
+<section id="nuclear">
+  <h2><span class="num">3</span>Step 2 · Solve the Nuclei on U(R)</h2>
+  <p class="lead">Now take the bonding curve U(R) built above and treat it as the potential for the two nuclei. Solving the nuclear Schrödinger equation on this well gives a ladder of quantised <strong>vibrational levels</strong> E<sub>v</sub> and their wavefunctions &chi;<sub>v</sub>(R). This is done here by numerically integrating the equation on the computed curve, not by assuming a formula.</p>
+
+  <div class="panel">
+    <canvas id="pec2" height="420"></canvas>
+    <div class="cap">Bonding potential U(R) with the vibrational ladder. The highlighted level shows its wavefunction; where each line meets the curve are the classical turning points.</div>
+
+    <div class="grid2" style="margin-top:14px;">
+      <div>
+        <div class="ctrl">
+          <label>Highlighted vibrational level v <span class="val" id="v-v">0</span></label>
+          <input type="range" id="s-v" min="0" max="7" step="1" value="0">
+        </div>
+        <div class="btnrow">
+          <span style="font-size:.9rem;font-weight:600;color:var(--navy);">Show:</span>
+          <span class="seg" id="wf-seg">
+            <button id="b-psi2" class="active">|&chi;<sub>v</sub>|²</button>
+            <button id="b-psi">&chi;<sub>v</sub></button>
+          </span>
+        </div>
+      </div>
+      <div>
+        <div class="ctrl" style="margin-top:0;">
+          <label>Nuclei (reduced mass sets the spacing)</label>
+          <select id="sel-mass">
+            <option value="918.08">H₂⁺  (two protons, μ = 918 mₑ)</option>
+            <option value="1223.9">HD⁺  (μ = 1224 mₑ)</option>
+            <option value="1836.15">D₂⁺  (two deuterons, μ = 1836 mₑ)</option>
+            <option value="3672.3">heavy model  (μ = 3672 mₑ)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="chip">E<sub>v</sub> &minus; U<sub>min</sub> = <b id="r-Ev">—</b> cm⁻¹</div>
+      <div class="chip">Harmonic spacing &omega;<sub>e</sub> &asymp; E<sub>1</sub>&minus;E<sub>0</sub> = <b id="r-we">—</b> cm⁻¹</div>
+      <div class="chip">Zero-point energy = <b id="r-zpe">—</b> cm⁻¹</div>
+      <div class="chip">Bound levels found = <b id="r-nlev">—</b></div>
+      <div class="chip">D<sub>0</sub> = D<sub>e</sub> &minus; ZPE = <b id="r-D0">—</b> eV</div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--bond)"></i> U(R)</span>
+      <span><i style="background:var(--level)"></i> vibrational levels E<sub>v</sub></span>
+      <span><i style="background:var(--wave)"></i> highlighted &chi;<sub>v</sub></span>
+    </div>
+  </div>
+
+  <div class="note gold">Two features to point out to students. First, the lowest level sits <em>above</em> the bottom of the well: the <strong>zero-point energy</strong>, a purely quantum effect, so the molecule is never truly at rest. Second, the rungs get <strong>closer together</strong> as you climb: the well is anharmonic (softer than a parabola near dissociation), so a harmonic-oscillator model is only good near the bottom. Switch to the heavier nuclei and watch every level drop and bunch up, because spacing scales as 1/&radic;&mu;.</div>
+  <p style="font-size:.9rem;color:var(--muted);">Model note: the LCAO curve is the textbook first approximation, so its well (D<sub>e</sub> &asymp; 1.76 eV, &omega;<sub>e</sub> &asymp; 1700 cm⁻¹) is a little shallow and soft compared with the exact H<sub>2</sub><sup>+</sup> values (2.79 eV, 2321 cm⁻¹). The <em>method</em> shown is exactly the one used in full electronic-structure calculations; only the quality of the electronic wavefunction differs.</p>
+</section>
+
+<!-- ============ VALIDITY ============ -->
+<section id="validity">
+  <h2><span class="num">4</span>Why It Works, and When It Breaks</h2>
+  <p>The approximation rests on the nuclei being slow enough that the electrons always relax to their ground state for the current geometry (the <em>adiabatic</em> picture). The small parameter is roughly (m<sub>e</sub>/M<sub>n</sub>)<sup>1/4</sup>, which is about 0.15 even for hydrogen, so the separation is remarkably good for ground-state structure, spectra and most of chemistry.</p>
+  <p>It <strong>breaks down</strong> when two electronic potential curves come close together or cross, for example at <em>avoided crossings</em> and <em>conical intersections</em>. There the nuclear motion can kick the system from one electronic state to another (non-adiabatic coupling), and the clean product form &Psi; = &phi;&chi; no longer holds. These situations govern photochemistry, radiationless decay, and charge transfer, which is why going <em>beyond</em> Born–Oppenheimer is an active field.</p>
+  <div class="equation" style="font-size:1.0rem;">
+    full problem &nbsp;→&nbsp; <span class="hi">electronic U(R)</span> &nbsp;→&nbsp; <span class="hi">nuclear E<sub>v</sub></span> &nbsp;→&nbsp; spectra, bond lengths, dissociation energies
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>CHY211 · Atomic Structure and Chemical Bonding · Prof. Vinesh Vijayan</p>
+  <p>Electronic structure by the H₂⁺ LCAO method; vibrational levels by numerical solution of the nuclear Schrödinger equation. All curves computed live in your browser.</p>
+</footer>
+
+<script>
+/* =======================================================================
+   Physics in atomic units (bohr, hartree). Verified against known results.
+   ======================================================================= */
+const HARTREE_EV=27.211386, HARTREE_CM=219474.63, BOHR_ANG=0.529177;
+
+// H2+ LCAO closed-form two-centre integrals
+const Sint=R=>Math.exp(-R)*(1+R+R*R/3);
+const Jint=R=>1/R - Math.exp(-2*R)*(1+1/R);
+const Kint=R=>Math.exp(-R)*(1+R);
+const Ug=R=>{const S=Sint(R);return -0.5 + 1/R - (Jint(R)+Kint(R))/(1+S);};  // bonding
+const Uu=R=>{const S=Sint(R);return -0.5 + 1/R - (Jint(R)-Kint(R))/(1-S);};  // antibonding
+
+// locate well minimum
+let RE=2.49, UMIN=-0.565;
+(function(){let best=1e9;for(let R=0.8;R<=8;R+=0.0005){const u=Ug(R);if(u<best){best=u;RE=R;}}UMIN=Ug(RE);})();
+const DE_EV=-(UMIN+0.5)*HARTREE_EV;
+
+/* ---- nuclear Schrödinger solver: symmetric tridiagonal, Sturm + inverse iteration ---- */
+function sturmCount(lam,d,b){let n=d.length,cnt=0,p=d[0]-lam;if(p<0)cnt++;
+  for(let i=1;i<n;i++){let den=p;if(Math.abs(den)<1e-300)den=1e-300;p=(d[i]-lam)-b[i-1]*b[i-1]/den;if(p<0)cnt++;}return cnt;}
+function eigval(k,d,b,lo,hi){for(let it=0;it<200;it++){const m=0.5*(lo+hi);if(sturmCount(m,d,b)<=k)lo=m;else hi=m;if(hi-lo<1e-13)break;}return 0.5*(lo+hi);}
+function thomas(d,b,r){const n=d.length,cp=new Float64Array(n),dp=new Float64Array(n),x=new Float64Array(n);
+  cp[0]=b[0]/d[0];dp[0]=r[0]/d[0];
+  for(let i=1;i<n;i++){const m=d[i]-b[i-1]*cp[i-1];cp[i]=(i<n-1?b[i]:0)/m;dp[i]=(r[i]-b[i-1]*dp[i-1])/m;}
+  x[n-1]=dp[n-1];for(let i=n-2;i>=0;i--)x[i]=dp[i]-cp[i]*x[i+1];return x;}
+function eigvec(E,d,b,h){const n=d.length,ds=new Float64Array(n);for(let i=0;i<n;i++)ds[i]=d[i]-(E+1e-9);
+  let x=new Float64Array(n);for(let i=0;i<n;i++)x[i]=Math.sin((i+1)/(n+1)*Math.PI*1.3)+0.01*(Math.random()-0.5);
+  for(let it=0;it<3;it++){x=thomas(ds,b,x);let s=0;for(let i=0;i<n;i++)s+=x[i]*x[i];s=Math.sqrt(s*h);for(let i=0;i<n;i++)x[i]/=s;}
+  let im=0,vm=0;for(let i=0;i<n;i++)if(Math.abs(x[i])>vm){vm=Math.abs(x[i]);im=i;}if(x[im]<0)for(let i=0;i<n;i++)x[i]=-x[i];
+  return x;}
+function solveVib(mu,Rlo,Rhi,N,nlev){
+  const h=(Rhi-Rlo)/(N-1),d=new Float64Array(N),b=new Float64Array(N-1),Rg=new Float64Array(N),Up=new Float64Array(N);
+  const t=1/(2*mu*h*h);let umin=1e9;
+  for(let i=0;i<N;i++){const R=Rlo+i*h;Rg[i]=R;Up[i]=Ug(R);if(Up[i]<umin)umin=Up[i];d[i]=2*t+Up[i];}
+  for(let i=0;i<N-1;i++)b[i]=-t;
+  const E=[],PSI=[];const Udiss=Ug(Rhi);        // approx dissociation ceiling
+  for(let k=0;k<nlev;k++){const ev=eigval(k,d,b,umin-0.002,umin+0.6);
+    if(ev>Udiss-1e-4)break;                      // only bound levels
+    E.push(ev);PSI.push(eigvec(ev,d,b,h));}
+  return {E,PSI,Rg,h,umin};
+}
+
+/* =======================================================================
+   Rendering helpers
+   ======================================================================= */
+function setup(cv,cssH){const dpr=window.devicePixelRatio||1,W=cv.clientWidth;cv.width=Math.round(W*dpr);cv.height=Math.round(cssH*dpr);const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);cv._W=W;cv._H=cssH;return c;}
+const NAVY='#0a285a',GOLD='#b48c32',GRID='#dce3ef',BOND='#2471a3',ANTI='#c0392b',WAVE='#b48c32';
+
+/* ------------ STEP 1 state ------------ */
+let R=RE, orb='bond';
+const trace=[];        // sampled {R,U} points
+const cloud=document.getElementById('cloud');
+const pec1=document.getElementById('pec1');
+let cctx=setup(cloud,230), p1=setup(pec1,230);
+// offscreen for electron density
+const off=document.createElement('canvas');off.width=200;off.height=130;const octx=off.getContext('2d');
+const oimg=octx.createImageData(200,130);
+
+function drawCloud(){
+  const W=cloud._W,H=cloud._H;cctx.clearRect(0,0,W,H);
+  // spatial window fixed (bohr): z in [-6.5,6.5], x scaled to aspect
+  const zmax=6.5, xmax=zmax*(130/200);
+  const s=(orb==='bond')?1:-1;
+  let maxd=0;const dens=new Float64Array(200*130);
+  for(let j=0;j<130;j++){const x=(j/129-0.5)*2*xmax;
+    for(let i=0;i<200;i++){const z=(i/199-0.5)*2*zmax;
+      const rA=Math.hypot(x,z+R/2),rB=Math.hypot(x,z-R/2);
+      const psi=Math.exp(-rA)+s*Math.exp(-rB);const dv=psi*psi;dens[j*200+i]=dv;if(dv>maxd)maxd=dv;}}
+  for(let k=0;k<200*130;k++){const col=Math.pow(dens[k]/maxd,0.33);    // gamma for visibility
+    const R_=Math.round(248-200*col), G_=Math.round(244-232*col), B_=Math.round(251-150*col);
+    oimg.data[k*4]=R_;oimg.data[k*4+1]=G_;oimg.data[k*4+2]=B_;oimg.data[k*4+3]=255;}
+  octx.putImageData(oimg,0,0);
+  cctx.imageSmoothingEnabled=true;cctx.drawImage(off,0,0,200,130,0,0,W,H-28);
+  // nuclei
+  const zToX=z=>((z/(2*zmax))+0.5)*W, xToY=x=>((x/(2*xmax))+0.5)*(H-28);
+  [[-R/2,'A'],[R/2,'B']].forEach(([zc,lab])=>{cctx.fillStyle=NAVY;cctx.beginPath();cctx.arc(zToX(zc),xToY(0),7,0,7);cctx.fill();
+    cctx.fillStyle='#fff';cctx.font='bold 10px Georgia';cctx.textAlign='center';cctx.fillText(lab,zToX(zc),xToY(0)+3.5);});
+  // R bracket
+  cctx.strokeStyle=GOLD;cctx.lineWidth=1.5;cctx.beginPath();cctx.moveTo(zToX(-R/2),H-22);cctx.lineTo(zToX(R/2),H-22);cctx.stroke();
+  cctx.fillStyle=NAVY;cctx.font='12px Georgia';cctx.textAlign='center';
+  cctx.fillText('R = '+(R*BOHR_ANG).toFixed(2)+' Å',(zToX(-R/2)+zToX(R/2))/2,H-8);
+  cctx.textAlign='left';cctx.fillStyle='#6a2c91';cctx.fillText((orb==='bond'?'σg bonding':'σu* antibonding'),8,16);
+}
+
+function pecAxes(ctx,W,H,Rlo,Rhi,Elo,Ehi,padL){
+  const padR=12,padT=14,padB=30,x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+  const sx=R=>x0+(R-Rlo)/(Rhi-Rlo)*(x1-x0), sy=E=>y1-(E-Elo)/(Ehi-Elo)*(y1-y0);
+  ctx.strokeStyle=GRID;ctx.lineWidth=1;ctx.fillStyle='#5a6675';ctx.font='10px Georgia';ctx.textAlign='right';
+  for(let g=0;g<=4;g++){const E=Elo+(Ehi-Elo)*g/4,y=sy(E);ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.fillText(E.toFixed(2),x0-4,y+3);}
+  ctx.textAlign='center';for(let g=0;g<=6;g++){const Rr=Rlo+(Rhi-Rlo)*g/6;ctx.fillText(Rr.toFixed(0),sx(Rr),y1+14);}
+  ctx.fillStyle='#1b2430';ctx.fillText('R  (bohr)  →',(x0+x1)/2,H-4);
+  ctx.save();ctx.translate(11,(y0+y1)/2);ctx.rotate(-Math.PI/2);ctx.fillText('U(R)  (hartree)',0,0);ctx.restore();
+  ctx.strokeStyle='#9aa7bd';ctx.beginPath();ctx.moveTo(x0,y1);ctx.lineTo(x1,y1);ctx.moveTo(x0,y0);ctx.lineTo(x0,y1);ctx.stroke();
+  return {sx,sy,x0,x1,y0,y1};
+}
+const R_LO=0.8,R_HI=8,E_LO=-0.62,E_HI=-0.30;
+function drawPEC1(){
+  const W=pec1._W,H=pec1._H;p1.clearRect(0,0,W,H);
+  const ax=pecAxes(p1,W,H,R_LO,R_HI,E_LO,E_HI,40);
+  // faint full curves for reference
+  const drawCurve=(fn,col,dash)=>{p1.save();p1.strokeStyle=col;p1.globalAlpha=.28;p1.lineWidth=2;if(dash)p1.setLineDash([5,4]);
+    p1.beginPath();let started=false;for(let Rr=R_LO;Rr<=R_HI;Rr+=0.02){const E=fn(Rr);if(E<E_HI+0.05){const px=ax.sx(Rr),py=ax.sy(Math.max(E,E_LO));if(!started){p1.moveTo(px,py);started=true;}else p1.lineTo(px,py);}}
+    p1.stroke();p1.restore();};
+  drawCurve(Ug,BOND,false);
+  if(orb==='anti')drawCurve(Uu,ANTI,true);
+  // sampled trace dots (the "constructed" points)
+  const fn=(orb==='bond')?Ug:Uu, col=(orb==='bond')?BOND:ANTI;
+  p1.fillStyle=col;
+  trace.forEach(pt=>{if(pt.orb!==orb)return;const E=pt.U;if(E<E_HI&&E>E_LO){p1.beginPath();p1.arc(ax.sx(pt.R),ax.sy(E),2.6,0,7);p1.fill();}});
+  // current point
+  const Ucur=fn(R);
+  if(Ucur<E_HI&&Ucur>E_LO){p1.fillStyle=GOLD;p1.strokeStyle='#fff';p1.lineWidth=2;p1.beginPath();p1.arc(ax.sx(R),ax.sy(Ucur),6,0,7);p1.fill();p1.stroke();}
+  // Re marker
+  p1.strokeStyle=NAVY;p1.globalAlpha=.4;p1.setLineDash([3,3]);p1.beginPath();p1.moveTo(ax.sx(RE),ax.y0);p1.lineTo(ax.sx(RE),ax.y1);p1.stroke();p1.setLineDash([]);p1.globalAlpha=1;
+}
+
+function updateStep1(){
+  document.getElementById('v-Rb').textContent=R.toFixed(2);
+  document.getElementById('v-Ra').textContent=(R*BOHR_ANG).toFixed(2);
+  document.getElementById('r-S').textContent=Sint(R).toFixed(3);
+  const fn=(orb==='bond')?Ug:Uu;
+  document.getElementById('r-U').textContent=fn(R).toFixed(3);
+  document.getElementById('r-rep').textContent=(1/R).toFixed(3);
+  document.getElementById('r-well').innerHTML='Well depth D<sub>e</sub> = <b>'+DE_EV.toFixed(2)+'</b> eV at R<sub>e</sub> = <b>'+(RE*BOHR_ANG).toFixed(2)+'</b> Å';
+  // record sample point
+  if(!trace.some(p=>Math.abs(p.R-R)<0.015&&p.orb===orb))trace.push({R:R,U:fn(R),orb:orb});
+  drawCloud();drawPEC1();
+}
+
+document.getElementById('s-R').addEventListener('input',e=>{R=+e.target.value;updateStep1();});
+document.getElementById('b-bond').addEventListener('click',()=>{orb='bond';document.getElementById('b-bond').classList.add('active');document.getElementById('b-anti').classList.remove('active');updateStep1();});
+document.getElementById('b-anti').addEventListener('click',()=>{orb='anti';document.getElementById('b-anti').classList.add('active');document.getElementById('b-bond').classList.remove('active');updateStep1();});
+document.getElementById('b-cleartrace').addEventListener('click',()=>{trace.length=0;drawPEC1();});
+document.getElementById('b-sweep').addEventListener('click',()=>{
+  let Rr=R_LO;const sl=document.getElementById('s-R');
+  const iv=setInterval(()=>{Rr+=0.12;if(Rr>R_HI){clearInterval(iv);R=RE;sl.value=RE;updateStep1();return;}R=Rr;sl.value=Rr;updateStep1();},28);
+});
+
+/* ------------ STEP 2 ------------ */
+const pec2=document.getElementById('pec2');let p2=setup(pec2,420);
+let mu=918.08, vSel=0, wfMode='psi2', vib=null;
+function recompute(){vib=solveVib(mu,R_LO,R_HI,600,8);
+  document.getElementById('s-v').max=Math.max(0,vib.E.length-1);
+  if(vSel>vib.E.length-1)vSel=vib.E.length-1;
+  drawPEC2();updateStep2Readouts();}
+function turningPoints(E){ // on bonding curve, left and right R where Ug=E
+  let left=RE,right=RE;
+  for(let Rr=RE;Rr>R_LO;Rr-=0.002){if(Ug(Rr)>=E){left=Rr;break;}}
+  for(let Rr=RE;Rr<R_HI;Rr+=0.002){if(Ug(Rr)>=E){right=Rr;break;}}
+  return [left,right];
+}
+function drawPEC2(){
+  const W=pec2._W,H=pec2._H;p2.clearRect(0,0,W,H);
+  const Elo=UMIN-0.01, Ehi=UMIN+0.085;
+  const ax=pecAxes(p2,W,H,R_LO,R_HI,Elo,Ehi,46);
+  // potential
+  p2.strokeStyle=BOND;p2.lineWidth=2.6;p2.beginPath();let st=false;
+  for(let Rr=R_LO;Rr<=R_HI;Rr+=0.01){const E=Ug(Rr);if(E<Ehi+0.1){const px=ax.sx(Rr),py=ax.sy(Math.min(E,Ehi));if(!st){p2.moveTo(px,py);st=true;}else p2.lineTo(px,py);}}
+  p2.stroke();
+  // dissociation asymptote
+  const Udiss=Ug(R_HI);
+  p2.strokeStyle='#9aa7bd';p2.setLineDash([4,4]);p2.beginPath();p2.moveTo(ax.sx(4.5),ax.sy(Udiss));p2.lineTo(ax.x1,ax.sy(Udiss));p2.stroke();p2.setLineDash([]);
+  if(!vib)return;
+  // levels
+  vib.E.forEach((E,v)=>{const [l,r]=turningPoints(E);const hi=(v===vSel);
+    p2.strokeStyle=hi?GOLD:NAVY;p2.globalAlpha=hi?1:0.5;p2.lineWidth=hi?2.4:1.2;
+    p2.beginPath();p2.moveTo(ax.sx(l),ax.sy(E));p2.lineTo(ax.sx(r),ax.sy(E));p2.stroke();p2.globalAlpha=1;
+    p2.fillStyle=hi?GOLD:'#7a879c';p2.font=(hi?'bold ':'')+'10px Georgia';p2.textAlign='right';p2.fillText('v='+v,ax.sx(l)-3,ax.sy(E)+3);});
+  // highlighted wavefunction on its baseline
+  const E=vib.E[vSel],psi=vib.PSI[vSel],Rg=vib.Rg;
+  // amplitude scaling: fit within ~ level spacing
+  const spacing=(vib.E.length>1)?Math.abs(vib.E[Math.min(vSel+1,vib.E.length-1)]-vib.E[Math.max(vSel-1,0)])/ (vSel===0||vSel===vib.E.length-1?1:2):0.01;
+  let maxv=0;for(let i=0;i<psi.length;i++){const val=wfMode==='psi2'?psi[i]*psi[i]:psi[i];if(Math.abs(val)>maxv)maxv=Math.abs(val);}
+  const amp=(spacing*0.9)/ (maxv||1);
+  p2.strokeStyle=WAVE;p2.lineWidth=2.2;p2.beginPath();let s2=false;
+  for(let i=0;i<Rg.length;i++){const val=wfMode==='psi2'?psi[i]*psi[i]:psi[i];const y=ax.sy(E+val*amp);const x=ax.sx(Rg[i]);if(!s2){p2.moveTo(x,y);s2=true;}else p2.lineTo(x,y);}
+  p2.stroke();
+  // fill for psi^2
+  if(wfMode==='psi2'){p2.fillStyle='rgba(180,140,50,0.22)';p2.beginPath();p2.moveTo(ax.sx(Rg[0]),ax.sy(E));
+    for(let i=0;i<Rg.length;i++){const val=psi[i]*psi[i];p2.lineTo(ax.sx(Rg[i]),ax.sy(E+val*amp));}
+    p2.lineTo(ax.sx(Rg[Rg.length-1]),ax.sy(E));p2.closePath();p2.fill();}
+  // ZPE bracket
+  p2.strokeStyle='#6a2c91';p2.setLineDash([2,3]);p2.beginPath();p2.moveTo(ax.sx(RE),ax.sy(UMIN));p2.lineTo(ax.sx(RE),ax.sy(vib.E[0]));p2.stroke();p2.setLineDash([]);
+  p2.fillStyle='#6a2c91';p2.font='10px Georgia';p2.textAlign='left';p2.fillText('ZPE',ax.sx(RE)+4,ax.sy((UMIN+vib.E[0])/2));
+}
+function updateStep2Readouts(){
+  if(!vib||!vib.E.length)return;
+  const E=vib.E[vSel];
+  document.getElementById('r-Ev').textContent=((E-vib.umin)*HARTREE_CM).toFixed(0);
+  const we=vib.E.length>1?((vib.E[1]-vib.E[0])*HARTREE_CM):0;
+  document.getElementById('r-we').textContent=we.toFixed(0);
+  const zpe=(vib.E[0]-vib.umin)*HARTREE_CM;
+  document.getElementById('r-zpe').textContent=zpe.toFixed(0);
+  document.getElementById('r-nlev').textContent=vib.E.length;
+  document.getElementById('r-D0').textContent=(DE_EV - zpe/HARTREE_CM*HARTREE_EV).toFixed(2);
+  document.getElementById('v-v').textContent=vSel;
+}
+document.getElementById('s-v').addEventListener('input',e=>{vSel=+e.target.value;drawPEC2();updateStep2Readouts();});
+document.getElementById('sel-mass').addEventListener('change',e=>{mu=+e.target.value;recompute();});
+document.getElementById('b-psi2').addEventListener('click',()=>{wfMode='psi2';document.getElementById('b-psi2').classList.add('active');document.getElementById('b-psi').classList.remove('active');drawPEC2();});
+document.getElementById('b-psi').addEventListener('click',()=>{wfMode='psi';document.getElementById('b-psi').classList.add('active');document.getElementById('b-psi2').classList.remove('active');drawPEC2();});
+
+window.addEventListener('resize',()=>{cctx=setup(cloud,230);p1=setup(pec1,230);p2=setup(pec2,420);drawCloud();drawPEC1();drawPEC2();});
+
+// init
+updateStep1();
+recompute();
+</script>
+</body>
+</html>
